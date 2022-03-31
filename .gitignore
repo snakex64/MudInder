@@ -1,0 +1,11 @@
+﻿################################################################################
+# This .gitignore file was automatically created by Microsoft(R) Visual Studio.
+################################################################################
+
+/.vs
+/MudInder/bin/Debug/net6.0
+/MudInder/obj
+/MudInder.AzureFunctions.Core/bin
+/MudInder.AzureFunctions.Core/obj
+/MudIndex.Maui/bin/Debug
+/MudIndex.Maui/obj

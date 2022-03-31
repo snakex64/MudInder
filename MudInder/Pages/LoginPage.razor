@@ -1,0 +1,121 @@
+﻿@inject AzureFunctionsClient AzureFunctionsClient
+@inject AuthService AuthService
+
+<MudStack AlignItems="AlignItems.Center" Justify="Justify.Center" Spacing="4" Style="height: 100vh">
+
+
+	<MudText Typo="Typo.h2" Class="mb-5">
+		MudInder
+	</MudText>
+
+	<MudPaper Class="pa-4" Style="width: 75%">
+		<MudForm @ref="Form">
+
+			<MudTextField T="string" @bind-Value="Name" Label="Username" Required="true" RequiredError="User name is required!" />
+
+			<MudTextField T="string" Label="Password" @bind-Value="Password" Immediate="true" HelperText="@(IsSignup? "Choose a strong password" : "Enter your password")" InputType="InputType.Password" Validation="@(new Func<string, IEnumerable<string>>(PasswordStrength))" Required="true" RequiredError="Password is required!" />
+			@if (IsSignup)
+			{
+				<MudTextField T="string" Label="Password" HelperText="Repeat the password" Immediate="true" InputType="InputType.Password" Validation="@(new Func<string, string>(PasswordMatch))" />
+			}
+
+			<div class="d-flex justify-center mt-2">
+				@if (IsLoading)
+				{
+					<MudProgressCircular Color="Color.Info" Indeterminate="true" />
+				}
+				else
+				{
+					<MudButton OnClick="Accept" Disabled="!Form.IsValid">@(IsSignup ? "Signup" : "Login")</MudButton>
+				}
+			</div>
+			@if (WrongPassword)
+			{
+				<MudAlert Severity="Severity.Error">Wrong Username or Password</MudAlert>
+			}
+		</MudForm>
+	</MudPaper>
+
+	<MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.Center" Spacing="2">
+		<MudText>Or</MudText>
+
+		<MudButton Variant="Variant.Filled" Color="Color.Secondary" OnClick="@(() => IsSignup = !IsSignup)">@(IsSignup ? "Login" : "Signup")</MudButton>
+	</MudStack>
+</MudStack>
+
+@code {
+
+	[Parameter]
+	public EventCallback LoginChanged { get; set; }
+
+	private bool IsSignup { get; set; }
+
+	private bool IsLoading { get; set; }
+
+	private bool WrongPassword { get; set; }
+
+	private string Name { get; set; } = "";
+
+	private string Password { get; set; } = "";
+
+	private MudForm Form { get; set; }
+
+	private async Task Accept()
+	{
+		IsLoading = true;
+		var args = new AzureFunctionsClient.LoginArgs()
+			{
+				Name = Name,
+				Password = Password
+			};
+		AzureFunctionsClient.LoginReturn result;
+
+		if (IsSignup)
+			result = await AzureFunctionsClient.Signup(args);
+		else
+			result = await AzureFunctionsClient.Login(args);
+
+
+		if (result.Success)
+		{
+			AuthService.Token = result.Token;
+			_ = LoginChanged.InvokeAsync(); // no need to wait, we're probably never coming back here
+		}
+		else
+		{
+			WrongPassword = true;
+			IsLoading = false;
+		}
+	}
+
+	protected override void OnAfterRender(bool firstRender)
+	{
+		base.OnAfterRender(firstRender);
+
+		var past = Form.IsValid;
+		Form.Validate();
+
+		if (past != Form.IsValid || firstRender)
+			StateHasChanged();
+	}
+
+	private IEnumerable<string>
+	PasswordStrength(string pw)
+	{
+		if (string.IsNullOrWhiteSpace(pw))
+		{
+			yield return "Password is required!";
+			yield break;
+		}
+		if (pw.Length < 8)
+			yield return "Password must be at least of length 8";
+	}
+
+	private string PasswordMatch(string arg)
+	{
+		if (Password != arg)
+			return "Passwords don't match";
+		return null;
+	}
+
+	}

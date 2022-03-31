@@ -1,0 +1,42 @@
+﻿@inject Services.AuthService AuthService
+
+<MudThemeProvider IsDarkMode="true"/>
+<MudDialogProvider />
+<MudSnackbarProvider />
+
+@if (!AuthService.IsAuthenticated)
+{
+	<LoginPage LoginChanged="LoginChanged" />
+}
+else
+{
+	<MudLayout Style="height: 100vh">
+		<MudMainContent Style="height: 100%">
+
+			@if (CurrentPage == "EditAccount") // sad way of selecting a page. Look away. Everything is fine
+			{
+				<EditAccountPage />
+			}
+			else if (CurrentPage == "Search")
+			{
+				<SearchPage />
+			}
+
+		</MudMainContent>
+		<MudAppBar Color="Color.Primary" Fixed="true" Dense="true" Bottom="true" Style="width: 100%">
+			<MudStack Row="true" Justify="Justify.SpaceEvenly" AlignItems="AlignItems.Center" Style="width: 100%">
+				<MudIconButton Icon="@Icons.Filled.ManageSearch" Color="Color.Secondary" OnClick="@(() => CurrentPage = "Search")" />
+				<MudIconButton Icon="@Icons.Filled.Person" Color="Color.Inherit" OnClick="@(() => CurrentPage = "EditAccount")" />
+			</MudStack>
+		</MudAppBar>
+	</MudLayout>
+}
+@code {
+
+	private string CurrentPage = "Search";
+
+	private void LoginChanged()
+	{
+		StateHasChanged();
+	}
+}
