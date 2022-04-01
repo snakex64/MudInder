@@ -10,37 +10,110 @@ using System.Security.Cryptography;
 using Microsoft.AspNetCore.Cryptography.KeyDerivation;
 using System.Text.Json;
 using MudInder.AzureFunctions.Core;
+using Microsoft.Azure.Cosmos;
+using Microsoft.Azure.Documents.Client;
+using System.Linq;
+using Microsoft.Azure.Cosmos.Linq;
+using System.Collections.Generic;
+using System.Security.Claims;
+using System.IdentityModel.Tokens.Jwt;
+using System.Text;
+using Microsoft.IdentityModel.Tokens;
 
 namespace MudInder.AzureFunctions
 {
     public static class LoginFunctions
     {
 
-        [FunctionName("login")]
-        public static async Task<IActionResult> Login(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = null)] HttpRequest req)
-        {
-            var args = await JsonSerializer.DeserializeAsync<AzureFunctionsClient.LoginArgs>(req.Body);
-
-            return new OkObjectResult(JsonSerializer.Serialize(new AzureFunctionsClient.LoginReturn()
-            {
-                Success = true,
-                Token = "yo yo"
-            }));
-        }
+        //[FunctionName("login")]
+        //public static async Task<IActionResult> Login(
+        //    [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = null)] HttpRequest req, [CosmosDB(databaseName: "DB", collectionName: nameof(Model.UserInfo))] CosmosClient client)
+        //{
+        //    var args = await JsonSerializer.DeserializeAsync<AzureFunctionsClient.LoginArgs>(req.Body);
+        //    if (args?.Name == null || args.Password == null)
+        //        return new NotFoundObjectResult(null);
+        //
+        //    //var userExists = await container.GetItemLinqQueryable<Model.UserInfo>().Where(x => x.UserName == args.Name).Take(1).ToFeedIterator().ToAsyncEnumerable().AnyAsync();
+        //    //if (userExists)
+        //    //{
+        //    //    return new OkObjectResult(JsonSerializer.Serialize(new AzureFunctionsClient.LoginReturn()
+        //    //    {
+        //    //        Success = false
+        //    //    }));
+        //    //}
+        //
+        //    return new OkObjectResult(JsonSerializer.Serialize(new AzureFunctionsClient.LoginReturn()
+        //    {
+        //        Success = true,
+        //        Token = GenerateToken(new[]
+        //        {
+        //            new Claim(ClaimTypes.NameIdentifier, args.Name)
+        //        }, TimeSpan.FromDays(7))
+        //    }));
+        //}
 
         [FunctionName("signup")]
         public static async Task<IActionResult> Signup(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = null)] HttpRequest req)
+            [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = null)] HttpRequest req, [CosmosDB(Connection = "ConnectionString")] CosmosClient client)
         {
-
             var args = await JsonSerializer.DeserializeAsync<AzureFunctionsClient.LoginArgs>(req.Body);
+            if( args?.Name == null || args.Password == null )
+                return new NotFoundObjectResult(null);
+
+            var container = client.GetDatabase("DB").GetContainer(nameof(Model.UserInfo));
+
+            var userExists = await container.GetItemLinqQueryable<Model.UserInfo>().Where(x => x.UserName == args.Name).Take(1).ToFeedIterator().ToAsyncEnumerable().AnyAsync();
+            if (userExists)
+            {
+                return new OkObjectResult(JsonSerializer.Serialize(new AzureFunctionsClient.LoginReturn()
+                {
+                    Success = false
+                }));
+            }
+
+            var passwordHash = Convert.ToBase64String(HashPasswordV3(args.Password));
+
+            await container.CreateItemAsync(new Model.UserInfo()
+            {
+                UserName = args.Name,
+                Password = passwordHash
+            });
 
             return new OkObjectResult(JsonSerializer.Serialize(new AzureFunctionsClient.LoginReturn()
             {
                 Success = true,
-                Token = "yo yo"
+                Token = GenerateToken(new[]
+                {
+                    new Claim(ClaimTypes.NameIdentifier, args.Name)
+                }, TimeSpan.FromDays(7))
             }));
+        }
+
+        private static string? _Key;
+        private static string Key 
+        {
+            get
+            {
+                if(_Key == null)
+                    _Key = Environment.GetEnvironmentVariable("TokenKeys") ?? throw new Exception("Unable to get TokenKeys");
+                return _Key;
+            }
+        }
+
+        private static string GenerateToken(IEnumerable<Claim> claims, TimeSpan? expiresIn)
+        {
+            var tokenHandler = new JwtSecurityTokenHandler();
+            var key = Encoding.ASCII.GetBytes(Key);
+            var tokenDescriptor = new SecurityTokenDescriptor
+            {
+                Subject = new ClaimsIdentity(claims),
+                Expires = expiresIn == null ? null : DateTime.UtcNow + expiresIn,
+                SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
+            };
+            var token = tokenHandler.CreateToken(tokenDescriptor);
+            var tokenStr = tokenHandler.WriteToken(token);
+
+            return tokenStr;
         }
 
         #region Hashing, totally not stolen here https://github.com/dotnet/AspNetCore/blob/main/src/Identity/Extensions.Core/src/PasswordHasher.cs
