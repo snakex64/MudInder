@@ -75,6 +75,7 @@ namespace MudInder.AzureFunctions
 
             await container.CreateItemAsync(new Model.UserInfo()
             {
+                id = Guid.NewGuid(),
                 UserName = args.Name,
                 Password = passwordHash
             });
