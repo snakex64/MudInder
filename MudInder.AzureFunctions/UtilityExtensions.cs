@@ -1,8 +1,12 @@
-﻿using Microsoft.Azure.Cosmos;
+﻿using Microsoft.AspNetCore.Http;
+using Microsoft.Azure.Cosmos;
+using Microsoft.IdentityModel.Tokens;
 using System;
 using System.Collections.Generic;
+using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Security.Claims;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -19,6 +23,27 @@ namespace MudInder.AzureFunctions
 
                 foreach(var item in response)
                     yield return item;
+            }
+        }
+
+        public static ClaimsPrincipal ValidateAuth(this HttpRequest request)
+        {
+            try
+            {
+                var auth = request.Headers["Authorization"].FirstOrDefault();
+
+                var tokenHandler = new JwtSecurityTokenHandler();
+                return tokenHandler.ValidateToken(auth, new TokenValidationParameters
+                {
+                    ValidateIssuerSigningKey = true,
+                    ValidateIssuer = false,
+                    ValidateAudience = false,
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(LoginFunctions.Key))
+                }, out SecurityToken validatedToken);
+            }
+            catch
+            {
+                throw new NotSupportedException();
             }
         }
 

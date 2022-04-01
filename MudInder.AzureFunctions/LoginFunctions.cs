@@ -25,32 +25,34 @@ namespace MudInder.AzureFunctions
     public static class LoginFunctions
     {
 
-        //[FunctionName("login")]
-        //public static async Task<IActionResult> Login(
-        //    [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = null)] HttpRequest req, [CosmosDB(databaseName: "DB", collectionName: nameof(Model.UserInfo))] CosmosClient client)
-        //{
-        //    var args = await JsonSerializer.DeserializeAsync<AzureFunctionsClient.LoginArgs>(req.Body);
-        //    if (args?.Name == null || args.Password == null)
-        //        return new NotFoundObjectResult(null);
-        //
-        //    //var userExists = await container.GetItemLinqQueryable<Model.UserInfo>().Where(x => x.UserName == args.Name).Take(1).ToFeedIterator().ToAsyncEnumerable().AnyAsync();
-        //    //if (userExists)
-        //    //{
-        //    //    return new OkObjectResult(JsonSerializer.Serialize(new AzureFunctionsClient.LoginReturn()
-        //    //    {
-        //    //        Success = false
-        //    //    }));
-        //    //}
-        //
-        //    return new OkObjectResult(JsonSerializer.Serialize(new AzureFunctionsClient.LoginReturn()
-        //    {
-        //        Success = true,
-        //        Token = GenerateToken(new[]
-        //        {
-        //            new Claim(ClaimTypes.NameIdentifier, args.Name)
-        //        }, TimeSpan.FromDays(7))
-        //    }));
-        //}
+        [FunctionName("login")]
+        public static async Task<IActionResult> Login(
+            [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = null)] HttpRequest req, [CosmosDB(Connection = "ConnectionString")] CosmosClient client)
+        {
+            var args = await JsonSerializer.DeserializeAsync<AzureFunctionsClient.LoginArgs>(req.Body);
+            if (args?.Name == null || args.Password == null)
+                return new NotFoundObjectResult(null);
+        
+            var container = client.GetDatabase("DB").GetContainer(nameof(Model.UserInfo));
+
+            var user = await container.GetItemLinqQueryable<Model.UserInfo>().Where(x => x.UserName == args.Name).Take(1).ToFeedIterator().ToAsyncEnumerable().FirstOrDefaultAsync();
+            if (user == null || !VerifyHashedPasswordV3(Convert.FromBase64String(user.Password), args.Password, out var _))
+            {
+                return new OkObjectResult(JsonSerializer.Serialize(new AzureFunctionsClient.LoginReturn()
+                {
+                    Success = false
+                }));
+            }
+        
+            return new OkObjectResult(JsonSerializer.Serialize(new AzureFunctionsClient.LoginReturn()
+            {
+                Success = true,
+                Token = GenerateToken(new[]
+                {
+                    new Claim(ClaimTypes.NameIdentifier, args.Name)
+                }, TimeSpan.FromDays(7))
+            }));
+        }
 
         [FunctionName("signup")]
         public static async Task<IActionResult> Signup(
@@ -91,7 +93,7 @@ namespace MudInder.AzureFunctions
         }
 
         private static string? _Key;
-        private static string Key 
+        public static string Key 
         {
             get
             {
