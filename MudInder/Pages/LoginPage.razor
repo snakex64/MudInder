@@ -1,7 +1,7 @@
 ﻿@inject AzureFunctionsClient AzureFunctionsClient
 @inject AuthService AuthService
 
-<MudStack AlignItems="AlignItems.Center" Justify="Justify.Center" Spacing="4" Style="height: 100vh">
+<MudStack AlignItems="AlignItems.Center" Justify="Justify.Center" Spacing="4" Style="height: 100%">
 
 
 	<MudText Typo="Typo.h2" Class="mb-5">
@@ -78,7 +78,7 @@
 
 		if (result.Success)
 		{
-			AuthService.Token = result.Token;
+			await AuthService.SetToken(result.Token);
 			_ = LoginChanged.InvokeAsync(); // no need to wait, we're probably never coming back here
 		}
 		else

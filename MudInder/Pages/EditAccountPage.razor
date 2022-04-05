@@ -1,5 +1,84 @@
-﻿<h3>EditAccount</h3>
+﻿@inject Services.AuthService AuthService
+@inject AzureFunctionsClient AzureFunctionsClient
+
+<MudStack AlignItems="AlignItems.Center" Justify="Justify.Center" Spacing="4" Style="height: 100%">
+
+
+	<MudText Typo="Typo.h2" Class="mb-5">
+		MudInder
+	</MudText>
+
+	<MudForm @ref="Form">
+
+		<MudTextField T="string" Label="Displayed name" Variant="Variant.Outlined" @bind-Value="DisplayedName" Required="true" Class="ma-2"></MudTextField>
+
+		<MudTextField T="string" Label="Description" @bind-Value="Description" Variant="Variant.Outlined"  Required="true" Lines="6" MaxLength="1000" Class="ma-2"></MudTextField>
+
+		<MudNumericField T="int" Label="Age" @bind-Value="Age" Min="18" Max="100" Variant="Variant.Outlined"  Required="true" Class="ma-2"></MudNumericField>
+
+
+		<MudStack Row="true" Spacing="0" Justify="Justify.Center" Class="ma-2">
+			<MudButton OnClick="FillFromProfile" Variant="Variant.Filled" Color="Color.Primary" DisableElevation="true" Class="rounded-r-0">Cancel</MudButton>
+			<MudPaper Elevation="0" Width="4px" Class="d-flex align-center justify-center relative pointer-events-none">
+				<MudPaper Elevation="0" Height="24px" Width="24px" Class="absolute rounded-circle z-20 d-flex align-center justify-center">
+					<MudText Typo="Typo.caption">or</MudText>
+				</MudPaper>
+			</MudPaper>
+			<MudButton OnClick="SaveProfile" Variant="Variant.Filled" Color="Color.Default" DisableElevation="true" Class="rounded-l-0" Disabled="!Form.IsValid">Save</MudButton>
+		</MudStack>
+
+	</MudForm>
+
+
+</MudStack>
 
 @code {
+
+	private string DisplayedName { get; set; } = null!;
+
+	private string Description { get; set; } = null!;
+
+	private int Age { get; set; }
+
+	private MudForm Form { get; set; } = null!;
+
+
+	protected override void OnInitialized()
+	{
+		base.OnInitialized();
+
+		FillFromProfile();
+	}
+
+	// fill page info from current profile
+	private void FillFromProfile()
+	{
+		var profile = AuthService.ProfileInfo;
+
+		DisplayedName = profile?.DisplayedName ?? "";
+		Description = profile?.Description ?? "";
+		Age = profile?.Age ?? 18;
+	}
+
+	// Save the profile
+	private async Task SaveProfile()
+	{
+		var profile = new AzureFunctionsClient.ProfileInfo
+			{
+				DisplayedName = DisplayedName,
+				Description = Description,
+				Age = Age
+			};
+
+		AuthService.ProfileInfo = profile;
+
+		await AzureFunctionsClient.UpdateProfile(new AzureFunctionsClient.UpdateProfileArgs()
+		{
+			ProfileInfo = profile,
+			Images = new Dictionary<int, byte[]>()
+		});
+
+	}
+
 
 }

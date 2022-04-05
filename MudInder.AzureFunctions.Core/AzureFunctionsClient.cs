@@ -6,10 +6,74 @@ namespace MudInder.AzureFunctions.Core
     {
         private HttpClient HttpClient = new HttpClient();
 
+        public string? Token { get; set; }
+
         public AzureFunctionsClient(string baseUrl)
         {
             HttpClient.BaseAddress = new Uri(baseUrl);
         }
+
+        #region DoRequest
+
+        private async Task<TReturn?> DoRequest<TArgs, TReturn>(string url, TArgs args)
+        {
+            // add bearer authorization
+            if (Token != null)
+                HttpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", Token);
+
+            var result = await HttpClient.PostAsync(url, new StringContent(JsonSerializer.Serialize(args)));
+
+            if (result.StatusCode != System.Net.HttpStatusCode.OK)
+                return default;
+
+            return await JsonSerializer.DeserializeAsync<TReturn>(result.Content.ReadAsStream());
+        }
+
+        #endregion
+
+
+        #region UpdateProfile / GetMyProfile 
+
+        public class UpdateProfileResult
+        {
+            
+        }
+
+        public class UpdateProfileArgs
+        {
+            public ProfileInfo ProfileInfo { get; set; }
+
+            public Dictionary<int, byte[]> Images { get; set; }
+        }
+        public class ProfileInfo
+        {
+            public string DisplayedName { get; set; } = null!;
+            
+            public int Age { get; set; }
+
+            public string Description { get; set; } = null!;
+        }
+
+        public async Task<UpdateProfileResult?> UpdateProfile(UpdateProfileArgs args)
+        {
+            var result = await DoRequest<UpdateProfileArgs, UpdateProfileResult>("/api/updateprofile", args);
+
+            return result;
+        }
+        
+        public class GetMyProfileArgs
+        {
+        }
+        
+        public async Task<ProfileInfo?> GetMyProfile(GetMyProfileArgs args)
+        {
+            var result = await DoRequest<GetMyProfileArgs, ProfileInfo>("/api/getmyprofile", args);
+
+            return result;
+        }
+
+
+        #endregion
 
         #region Login / Signup 
 
@@ -27,28 +91,20 @@ namespace MudInder.AzureFunctions.Core
         }
         public async Task<LoginReturn> Login(LoginArgs loginArgs)
         {
+            var result = await DoRequest<LoginArgs, LoginReturn>("/api/login", loginArgs);
 
-            var result = await HttpClient.PostAsync("/api/login", new StringContent(JsonSerializer.Serialize(loginArgs)));
+            Token = result?.Token;
 
-            if (result.StatusCode != System.Net.HttpStatusCode.OK)
-                return new LoginReturn();
-
-            var loginReturn = await JsonSerializer.DeserializeAsync<LoginReturn>(result.Content.ReadAsStream());
-
-            return loginReturn ?? new LoginReturn();
+            return result ?? new LoginReturn();
         }
 
         public async Task<LoginReturn> Signup(LoginArgs loginArgs)
         {
+            var result = await DoRequest<LoginArgs, LoginReturn>("/api/signup", loginArgs);
 
-            var result = await HttpClient.PostAsync("/api/signup", new StringContent(JsonSerializer.Serialize(loginArgs)));
-
-            if (result.StatusCode != System.Net.HttpStatusCode.OK)
-                return new LoginReturn();
-
-            var loginReturn = await JsonSerializer.DeserializeAsync<LoginReturn>(result.Content.ReadAsStream());
-
-            return loginReturn ?? new LoginReturn();
+            Token = result?.Token;
+            
+            return result ?? new LoginReturn();
         }
 
         #endregion

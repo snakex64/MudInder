@@ -20,7 +20,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Text;
 using Microsoft.IdentityModel.Tokens;
 
-namespace MudInder.AzureFunctions
+namespace MudInder.AzureFunctions.Functions
 {
     public static class LoginFunctions
     {
@@ -32,7 +32,7 @@ namespace MudInder.AzureFunctions
             var args = await JsonSerializer.DeserializeAsync<AzureFunctionsClient.LoginArgs>(req.Body);
             if (args?.Name == null || args.Password == null)
                 return new NotFoundObjectResult(null);
-        
+
             var container = client.GetDatabase("DB").GetContainer(nameof(Model.UserInfo));
 
             var user = await container.GetItemLinqQueryable<Model.UserInfo>().Where(x => x.UserName == args.Name).Take(1).ToFeedIterator().ToAsyncEnumerable().FirstOrDefaultAsync();
@@ -43,7 +43,7 @@ namespace MudInder.AzureFunctions
                     Success = false
                 }));
             }
-        
+
             return new OkObjectResult(JsonSerializer.Serialize(new AzureFunctionsClient.LoginReturn()
             {
                 Success = true,
@@ -59,7 +59,7 @@ namespace MudInder.AzureFunctions
             [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = null)] HttpRequest req, [CosmosDB(Connection = "ConnectionString")] CosmosClient client)
         {
             var args = await JsonSerializer.DeserializeAsync<AzureFunctionsClient.LoginArgs>(req.Body);
-            if( args?.Name == null || args.Password == null )
+            if (args?.Name == null || args.Password == null)
                 return new NotFoundObjectResult(null);
 
             var container = client.GetDatabase("DB").GetContainer(nameof(Model.UserInfo));
@@ -93,11 +93,11 @@ namespace MudInder.AzureFunctions
         }
 
         private static string? _Key;
-        public static string Key 
+        public static string Key
         {
             get
             {
-                if(_Key == null)
+                if (_Key == null)
                     _Key = Environment.GetEnvironmentVariable("TokenKeys") ?? throw new Exception("Unable to get TokenKeys");
                 return _Key;
             }
@@ -125,7 +125,7 @@ namespace MudInder.AzureFunctions
 
         private static bool VerifyHashedPasswordV3(byte[] hashedPassword, string password, out int iterCount)
         {
-            iterCount = default(int);
+            iterCount = default;
 
             try
             {
@@ -190,10 +190,10 @@ namespace MudInder.AzureFunctions
         }
         private static uint ReadNetworkByteOrder(byte[] buffer, int offset)
         {
-            return ((uint)(buffer[offset + 0]) << 24)
-                | ((uint)(buffer[offset + 1]) << 16)
-                | ((uint)(buffer[offset + 2]) << 8)
-                | ((uint)(buffer[offset + 3]));
+            return (uint)buffer[offset + 0] << 24
+                | (uint)buffer[offset + 1] << 16
+                | (uint)buffer[offset + 2] << 8
+                | buffer[offset + 3];
         }
         private static void WriteNetworkByteOrder(byte[] buffer, int offset, uint value)
         {

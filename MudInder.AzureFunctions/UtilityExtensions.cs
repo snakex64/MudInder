@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.Azure.Cosmos;
 using Microsoft.IdentityModel.Tokens;
+using MudInder.AzureFunctions.Functions;
 using System;
 using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
@@ -30,7 +31,7 @@ namespace MudInder.AzureFunctions
         {
             try
             {
-                var auth = request.Headers["Authorization"].FirstOrDefault();
+                var auth = request.Headers["Authorization"].FirstOrDefault()?["Bearer ".Length..];
 
                 var tokenHandler = new JwtSecurityTokenHandler();
                 return tokenHandler.ValidateToken(auth, new TokenValidationParameters

@@ -9,3 +9,5 @@
 /MudInder.AzureFunctions.Core/obj
 /MudIndex.Maui/bin/Debug
 /MudIndex.Maui/obj
+/MudInder/bin/Release/net6.0
+/MudIndex.Maui/bin/Release
