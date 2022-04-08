@@ -26,7 +26,7 @@ namespace MudInder.Services
         {
             Token = token;
 
-            ProfileInfo = await AzureFunctionsClient.GetMyProfile(new AzureFunctionsClient.GetMyProfileArgs());
+            ProfileInfo = (await AzureFunctionsClient.GetMyProfile(new AzureFunctionsClient.GetMyProfileArgs()))?.ProfileInfo;
         }
     }
 }

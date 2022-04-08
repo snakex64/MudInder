@@ -14,6 +14,6 @@ namespace MudInder.AzureFunctions.Model
         
         public int Index { get; set; }
 
-        public byte[]? Data { get; set; }
+        public byte[] Data { get; set; }
     }
 }

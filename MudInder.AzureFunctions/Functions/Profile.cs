@@ -55,9 +55,10 @@ public static class ProfileFunctions
             NbImages = args.Images.Count
         };
         
+        var containerImages = client.GetDatabase("DB").GetContainer(nameof(Model.UserProfileImage));
         foreach ( var image in args.Images)
         {
-            await container.UpsertItemAsync(new Model.UserProfileImage()
+            await containerImages.UpsertItemAsync(new Model.UserProfileImage()
             {
                 id = user.id.ToString() + image.Key,
                 Data = image.Value,
@@ -90,12 +91,24 @@ public static class ProfileFunctions
         if (user?.Profile == null)
             return new NoContentResult();
 
-        return new OkObjectResult(JsonSerializer.Serialize(new AzureFunctionsClient.ProfileInfo()
+        var result = new AzureFunctionsClient.GetMyProfileResult()
         {
-            Age = user.Profile.Age,
-            Description = user.Profile.Description,
-            DisplayedName = user.Profile.DisplayedName
-        }));
+            ProfileInfo = new AzureFunctionsClient.ProfileInfo()
+            {
+                Age = user.Profile.Age,
+                Description = user.Profile.Description,
+                DisplayedName = user.Profile.DisplayedName
+            }
+        };
+        if (args.IncludeImages)
+		{
+            var containerImages = client.GetDatabase("DB").GetContainer(nameof(Model.UserProfileImage));
+            var imagesInDb = await containerImages.GetItemLinqQueryable<Model.UserProfileImage>().Where(x => x.UserId == user.id).Take(1).ToFeedIterator().ToAsyncEnumerable().ToListAsync();
+
+            result.Images = imagesInDb.ToDictionary(x => x.Index, x => x.Data);
+        }
+
+        return new OkObjectResult(JsonSerializer.Serialize(result));
     }
 
 }

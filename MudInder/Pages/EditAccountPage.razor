@@ -1,6 +1,8 @@
 ﻿@inject Services.AuthService AuthService
 @inject AzureFunctionsClient AzureFunctionsClient
 
+@using Microsoft.AspNetCore.Components.Forms
+
 <MudStack AlignItems="AlignItems.Center" Justify="Justify.Center" Spacing="4" Style="height: 100%">
 
 
@@ -10,11 +12,51 @@
 
 	<MudForm @ref="Form">
 
+		@if (LoadingImages)
+		{
+			<MudPaper Class="ma-5">
+				<MudProgressCircular Color="Color.Secondary" Indeterminate="true" />
+			</MudPaper>
+		}
+		else
+		{
+			@if (Images.Count < MaxImages)
+			{
+				<InputFile id="fileInput112" OnChange="UploadFiles" hidden multiple accept=".jpg, .jpeg, .png" />
+
+				<MudButton HtmlTag="label"
+				   Variant="Variant.Filled"
+				   Color="Color.Primary"
+				   StartIcon="@Icons.Filled.CloudUpload"
+				   for="fileInput112">
+					Upload your images
+				</MudButton>
+			}
+
+			<MudPaper>
+
+				<MudDropContainer T="DropItem" Items="Images" ItemsSelector="@((item,dropzone) => true)" Class="d-flex flex-wrap flex-grow-1">
+					<ChildContent>
+						<MudPaper Class="ma-4 flex-grow-1">
+							<MudList Clickable="true" Class="d-flex flex-column mud-height-full">
+								<MudDropZone T="DropItem" Identifier="1" Class="flex-grow-1" AllowReorder="true" />
+							</MudList>
+						</MudPaper>
+					</ChildContent>
+					<ItemRenderer>
+						<MudListItem>
+							<MudImage Src="@context.Base64" Alt="Mony the dog" Elevation="25" Class="rounded-lg" />
+						</MudListItem>
+					</ItemRenderer>
+				</MudDropContainer>
+			</MudPaper>
+
+		}
 		<MudTextField T="string" Label="Displayed name" Variant="Variant.Outlined" @bind-Value="DisplayedName" Required="true" Class="ma-2"></MudTextField>
 
-		<MudTextField T="string" Label="Description" @bind-Value="Description" Variant="Variant.Outlined"  Required="true" Lines="6" MaxLength="1000" Class="ma-2"></MudTextField>
+		<MudTextField T="string" Label="Description" @bind-Value="Description" Variant="Variant.Outlined" Required="true" Lines="6" MaxLength="1000" Class="ma-2"></MudTextField>
 
-		<MudNumericField T="int" Label="Age" @bind-Value="Age" Min="18" Max="100" Variant="Variant.Outlined"  Required="true" Class="ma-2"></MudNumericField>
+		<MudNumericField T="int" Label="Age" @bind-Value="Age" Min="18" Max="100" Variant="Variant.Outlined" Required="true" Class="ma-2"></MudNumericField>
 
 
 		<MudStack Row="true" Spacing="0" Justify="Justify.Center" Class="ma-2">
@@ -33,6 +75,9 @@
 </MudStack>
 
 @code {
+	private record class DropItem(byte[] Raw, string Base64);
+
+	private static int MaxImages = 5;
 
 	private string DisplayedName { get; set; } = null!;
 
@@ -42,6 +87,9 @@
 
 	private MudForm Form { get; set; } = null!;
 
+	private List<DropItem> Images { get; set; } = new();
+
+	private bool LoadingImages { get; set; } = true;
 
 	protected override void OnInitialized()
 	{
@@ -50,14 +98,49 @@
 		FillFromProfile();
 	}
 
+	private async Task UploadFiles(InputFileChangeEventArgs e)
+	{
+		LoadingImages = true;
+		StateHasChanged();
+		
+		var entries = e.GetMultipleFiles(MaxImages - Images.Count);
+
+		foreach (var file in entries)
+		{
+			var bytes = new byte[file.Size];
+
+			await using var stream = file.OpenReadStream();
+			await stream.ReadAsync(bytes);
+
+			Images.Add(new DropItem(bytes, Convert.ToBase64String(bytes)));
+		}
+		
+		LoadingImages = false;
+		StateHasChanged();
+	}
+
 	// fill page info from current profile
-	private void FillFromProfile()
+	private async Task FillFromProfile()
 	{
 		var profile = AuthService.ProfileInfo;
 
 		DisplayedName = profile?.DisplayedName ?? "";
 		Description = profile?.Description ?? "";
 		Age = profile?.Age ?? 18;
+
+
+		LoadingImages = true;
+		var result = await AzureFunctionsClient.GetMyProfile(new AzureFunctionsClient.GetMyProfileArgs()
+			{
+				IncludeImages = true
+			});
+
+		Images.Clear();
+		Images.AddRange(result.Images.Select(x => new DropItem(x.Value, Convert.ToBase64String(x.Value))));
+
+		LoadingImages = false;
+		StateHasChanged();
+
 	}
 
 	// Save the profile
@@ -73,10 +156,10 @@
 		AuthService.ProfileInfo = profile;
 
 		await AzureFunctionsClient.UpdateProfile(new AzureFunctionsClient.UpdateProfileArgs()
-		{
-			ProfileInfo = profile,
-			Images = new Dictionary<int, byte[]>()
-		});
+			{
+				ProfileInfo = profile,
+				Images = new Dictionary<int, byte[]>()
+			});
 
 	}
 

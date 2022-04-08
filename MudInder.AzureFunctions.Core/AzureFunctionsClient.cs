@@ -63,11 +63,18 @@ namespace MudInder.AzureFunctions.Core
         
         public class GetMyProfileArgs
         {
+            public bool IncludeImages { get; set; }
         }
-        
-        public async Task<ProfileInfo?> GetMyProfile(GetMyProfileArgs args)
+        public class GetMyProfileResult
         {
-            var result = await DoRequest<GetMyProfileArgs, ProfileInfo>("/api/getmyprofile", args);
+            public ProfileInfo ProfileInfo { get; set; }
+
+            public Dictionary<int, byte[]>? Images { get; set; }
+        }
+
+        public async Task<GetMyProfileResult?> GetMyProfile(GetMyProfileArgs args)
+        {
+            var result = await DoRequest<GetMyProfileArgs, GetMyProfileResult>("/api/getmyprofile", args);
 
             return result;
         }
