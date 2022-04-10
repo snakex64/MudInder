@@ -16,7 +16,7 @@ namespace MudInder.Services
 
             services
                 .AddSingleton<AuthService>()
-#if DEBUG
+#if !DEBUG
                 .AddSingleton(new AzureFunctions.Core.AzureFunctionsClient(@"http://localhost:7071"));
 #else
                 .AddSingleton(new AzureFunctions.Core.AzureFunctionsClient(@"https://fa-mudinder.azurewebsites.net"));

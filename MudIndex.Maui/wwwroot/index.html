@@ -25,7 +25,14 @@
 
 	<script src="_framework/blazor.webview.js" autostart="false"></script>
 	<script src="_content/MudBlazor/MudBlazor.min.js"></script>
+	
+    <script>
+        function isDevice() {
+            return /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini|mobile/i.test(navigator.userAgent);
+        }
 
+        window.isDevice = isDevice;
+    </script>
 </body>
 
 </html>

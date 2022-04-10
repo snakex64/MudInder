@@ -44,8 +44,9 @@ public static class ProfileFunctions
 
 
         // just delete all the previous images, no fancy (or smart) thing going on here:
+        var containerImages = client.GetDatabase("DB").GetContainer(nameof(Model.UserProfileImage));
         for (int i = 0; i < (user.Profile?.NbImages ?? 0); ++i)
-            await container.DeleteItemAsync<Model.UserProfileImage>(user.id.ToString() + i, new PartitionKey(user.id.ToString() + i)); // clean, I know. Lazy
+            await containerImages.DeleteItemAsync<Model.UserProfileImage>(user.id.ToString() + i, new PartitionKey(user.id.ToString())); // clean, I know. Lazy
 
         user.Profile = new Model.Profile()
         {
@@ -55,7 +56,6 @@ public static class ProfileFunctions
             NbImages = args.Images.Count
         };
         
-        var containerImages = client.GetDatabase("DB").GetContainer(nameof(Model.UserProfileImage));
         foreach ( var image in args.Images)
         {
             await containerImages.UpsertItemAsync(new Model.UserProfileImage()
@@ -103,7 +103,7 @@ public static class ProfileFunctions
         if (args.IncludeImages)
 		{
             var containerImages = client.GetDatabase("DB").GetContainer(nameof(Model.UserProfileImage));
-            var imagesInDb = await containerImages.GetItemLinqQueryable<Model.UserProfileImage>().Where(x => x.UserId == user.id).Take(1).ToFeedIterator().ToAsyncEnumerable().ToListAsync();
+            var imagesInDb = await containerImages.GetItemLinqQueryable<Model.UserProfileImage>().Where(x => x.UserId == user.id).ToFeedIterator().ToAsyncEnumerable().ToListAsync();
 
             result.Images = imagesInDb.ToDictionary(x => x.Index, x => x.Data);
         }

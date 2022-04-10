@@ -11,3 +11,5 @@
 /MudIndex.Maui/obj
 /MudInder/bin/Release/net6.0
 /MudIndex.Maui/bin/Release
+/MudInder.Wasm/bin/Debug/net6.0
+/MudInder.Wasm/obj

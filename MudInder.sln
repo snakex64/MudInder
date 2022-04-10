@@ -6,9 +6,11 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MudInder", "MudInder\MudInd
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MudInder.Maui", "MudIndex.Maui\MudInder.Maui.csproj", "{A9E53DF6-4E56-4687-96BD-0D74322530F9}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MudInder.AzureFunctions", "MudInder.AzureFunctions\MudInder.AzureFunctions.csproj", "{885716B4-34D3-450F-BC0A-63BBB5B5D263}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MudInder.AzureFunctions", "MudInder.AzureFunctions\MudInder.AzureFunctions.csproj", "{885716B4-34D3-450F-BC0A-63BBB5B5D263}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MudInder.AzureFunctions.Core", "MudInder.AzureFunctions.Core\MudInder.AzureFunctions.Core.csproj", "{21EDBB67-7BFD-4179-9A87-D9DB4836213D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MudInder.AzureFunctions.Core", "MudInder.AzureFunctions.Core\MudInder.AzureFunctions.Core.csproj", "{21EDBB67-7BFD-4179-9A87-D9DB4836213D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MudInder.Wasm", "MudInder.Wasm\MudInder.Wasm.csproj", "{F7EFC1C2-8D8D-4324-ACFC-C48CAA291A74}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -34,6 +36,10 @@ Global
 		{21EDBB67-7BFD-4179-9A87-D9DB4836213D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{21EDBB67-7BFD-4179-9A87-D9DB4836213D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{21EDBB67-7BFD-4179-9A87-D9DB4836213D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F7EFC1C2-8D8D-4324-ACFC-C48CAA291A74}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F7EFC1C2-8D8D-4324-ACFC-C48CAA291A74}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F7EFC1C2-8D8D-4324-ACFC-C48CAA291A74}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F7EFC1C2-8D8D-4324-ACFC-C48CAA291A74}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
